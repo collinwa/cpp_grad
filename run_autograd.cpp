@@ -1,10 +1,11 @@
 #include <iostream>
 #include <algorithm>
 #include <memory>
-#include "Value.h"
+#include "Test.h"
+using namespace std;
 
 int main(int argc, char **argv) {
-    std::cout << "Program for testing cpp_grad" << std::endl;
+    shared_ptr<Test> x = make_Test();
 
     return 0;
 }
