@@ -15,10 +15,12 @@ int main(int argc, char **argv) {
 
     shared_ptr<Value> x4 = make_Value(6.0);
 
-    Value& x5 = *x4 / x3 - *x2 + *x1 * *x4;
+    Value& x5 = *x1 * *x1 + *x2;
     x5.backward();
     cout << x5 ;
-    _print_nodes();
+    cout << *x1; 
+    cout << *x2;
+
     _free_nodes();
     return 0;
 }
