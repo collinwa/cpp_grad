@@ -25,7 +25,7 @@ Value::Value() {
     indegree = 0;
     outdegree = 0;
     val = 0.0;
-
+    grad = 0.0;
     identifier = rand();
 }
 
@@ -35,7 +35,7 @@ Value::Value(double val) {
     indegree = 0; 
     outdegree = 0; 
     this->val = val;
-
+    grad = 0.0;
     identifier = rand();
 }
 
@@ -47,7 +47,7 @@ Value::Value(double val, Value& lhs, Value& rhs, op_t op) {
     this->op = op;
     indegree = 2;
     outdegree = 0;
-
+    grad = 0.0;
     identifier = rand();
 }
 
@@ -164,6 +164,14 @@ Value& operator/(Value& lhs, Value& rhs) {
     return *tmp;
 }
 
+// from https://stackoverflow.com/questions/45507041/how-to-check-if-weak-ptr-is-empty-non-assigned
+// check if a weak_ptr is assigned 
+template <typename T>
+bool is_uninitialized(std::weak_ptr<T> const& weak) {
+    using wt = std::weak_ptr<T>;
+    return !weak.owner_before(wt{}) && !wt{}.owner_before(weak);
+}
+
 // operator for printing out a node
 ostream& operator<<(ostream& lhs, Value& v) {
     lhs << "-----begin node-----" << endl;
@@ -173,12 +181,13 @@ ostream& operator<<(ostream& lhs, Value& v) {
     lhs << "indegree: " << v.indegree << endl;
     lhs << "outdegree: " << v.outdegree << endl;
     lhs << "op_t " << v.op << endl;
-    if (!v.lhs.expired()) {
+
+    if (!is_uninitialized(v.lhs)) {
         lhs << "left ancestor: " << (v.lhs.lock())->identifier << endl;
     } else {
         lhs << "left ancestor: nullptr" << endl;
     }
-    if (!v.rhs.expired()) {
+    if (!is_uninitialized(v.rhs)) {
         lhs << "right ancestor: " << (v.rhs.lock())->identifier << endl;    
     } else {        
         lhs << "right ancestor: nullptr" << endl;
@@ -193,3 +202,4 @@ ostream& operator<<(ostream& lhs, Value& v) {
     lhs << "------end node------" << endl;
     return lhs;    
 }
+
