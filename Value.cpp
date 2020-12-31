@@ -247,24 +247,25 @@ bool operator<(const Value& lhs, const Value&rhs) {
 }
 
 void Value::backward() {
+    // compute derivatives before copying
     for (auto& x : gradient_tape) {
         x->compute_lr_derivatives();  
     }
 
     // construct the local heap from the gradient tape
     vector<Value> local_heap = vector<Value>(gradient_tape.size());
-
+    // copy gradient tape to the local heap
     for(auto& d : gradient_tape) {
         local_heap.push_back(*d);
     }
     make_heap(local_heap.begin(), local_heap.end());
 
-    Value& base_val = *get_self();
-
     // get a reference to the current vector
+    Value& base_val = *get_self();
     for (auto& x : local_heap) {
         if (x.is_grad_enabled()) {
-            //diff(base_val, x.get_self());
+            // compute gradient for all flexible parameters
+            chain_rule(base_val, x.get_self(), 1.0);
         }
     }
 }
@@ -280,6 +281,8 @@ void Value::backward() {
 };
 */
 
+// compute derivative w.r.t. left or right operand
+// unary operations only have a left operand
 void Value::compute_lr_derivatives() {
     switch(op) {
         // for binary ops, we guarantee that lhs/rhs exist
@@ -288,8 +291,8 @@ void Value::compute_lr_derivatives() {
             grad_r = lhs.lock()->get_self()->get_val();
             break;
         case input:
-            grad_l = 0.0;
-            grad_r = 0.0;
+            grad_l = 1.0;
+            grad_r = 1.0;
             break;
         case add:
             grad_l = 1.0;
@@ -312,4 +315,8 @@ void Value::compute_lr_derivatives() {
         default:
             break;
     }
+}
+
+void chain_rule(Value& base, shared_ptr<Value> stop, double acc) {
+   return; 
 }

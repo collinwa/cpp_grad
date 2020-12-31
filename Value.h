@@ -71,6 +71,7 @@ public:
 
     // overloaded boolean operators
     friend bool operator<(const Value& rhs, const Value& lhs);
+    friend void chain_rule(Value& base, shared_ptr<Value> stop, double acc);
 
     // overloaded I/O operators
     friend ostream& operator<<(ostream& os, Value& t);
