@@ -2,6 +2,7 @@
 #define __VALUE_H__
 #include <memory>
 #include <vector>
+#include <iostream>
 
 using namespace std;
 
@@ -9,7 +10,7 @@ enum op_t {
     mult,
     input,
     add,
-    div,
+    divide,
     sub   
 };
 
@@ -38,15 +39,25 @@ public:
     int get_indegree() { return indegree; }
     int get_outdegree() { return outdegree; }
     op_t get_op() { return op; }
-    
+    double get_val() { return val; } 
+
     // setters
     void set_indegree(int indegree) { this->indegree = indegree; }
     void set_outdegree(int outdegree) { this->outdegree = outdegree; }
     void set_op(op_t op) { this->op = op; }
-    
+
     // modifiers
     void inc_outdegree() { outdegree++; }
     void inc_indegree() { indegree++; }
+    void dec_indegree() { indegree--; }
+
+    // overloaded operators;
+    friend Value& operator+(Value& lhs, Value& rhs);
+    friend Value& operator-(Value& lhs, Value& rhs);
+    friend Value& operator*(Value& lhs, Value& rhs);
+    friend Value& operator/(Value& lhs, Value& rhs);
+    friend bool operator>(Value& rhs, Value& lhs);
+    friend bool operator<(Value& rhs, Value& lhs);
 
     // destructor
     ~Value();
@@ -59,11 +70,12 @@ private:
     int outdegree;
     op_t op;
 
-    weak_ptr<Value> a1;
-    weak_ptr<Value> a2;
+    weak_ptr<Value> lhs;
+    weak_ptr<Value> rhs;
     weak_ptr<Value> self;
 
     shared_ptr<Value> d;
+    int identifier;
 };
 
 #endif
