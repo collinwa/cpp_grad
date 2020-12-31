@@ -247,8 +247,13 @@ bool operator<(const Value& lhs, const Value&rhs) {
 }
 
 void Value::backward() {
+    for (auto& x : gradient_tape) {
+        x->compute_lr_derivatives();  
+    }
+
     // construct the local heap from the gradient tape
     vector<Value> local_heap = vector<Value>(gradient_tape.size());
+
     for(auto& d : gradient_tape) {
         local_heap.push_back(*d);
     }
@@ -256,7 +261,7 @@ void Value::backward() {
 
     Value& base_val = *get_self();
 
-    // get a referenc to the current vector
+    // get a reference to the current vector
     for (auto& x : local_heap) {
         if (x.is_grad_enabled()) {
             //diff(base_val, x.get_self());
@@ -264,5 +269,47 @@ void Value::backward() {
     }
 }
 
+/*
+*enum op_t {
+    mult,
+    input,
+    add,
+    divide,
+    sub,
+    relu_op
+};
+*/
 
-
+void Value::compute_lr_derivatives() {
+    switch(op) {
+        // for binary ops, we guarantee that lhs/rhs exist
+        case mult:
+            grad_l = rhs.lock()->get_self()->get_val();
+            grad_r = lhs.lock()->get_self()->get_val();
+            break;
+        case input:
+            grad_l = 0.0;
+            grad_r = 0.0;
+            break;
+        case add:
+            grad_l = 1.0;
+            grad_r = 1.0;
+            break;
+        case divide:
+            grad_l = 1 / rhs.lock()->get_self()->get_val();
+            grad_r = -1 * lhs.lock()->get_self()->get_val() /  
+                    (rhs.lock()->get_self()->get_val() * 
+                     rhs.lock()->get_self()->get_val());
+            break;
+        case sub:
+            grad_l = 1.0;
+            grad_r = -1.0;
+            break;
+        case relu_op:
+            grad_l = val >= 0.0 ? 1.0 : 0.0;
+            grad_r = 0.0;
+            break;
+        default:
+            break;
+    }
+}

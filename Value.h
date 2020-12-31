@@ -52,7 +52,10 @@ public:
     void dec_indegree() { indegree--; }
     void set_grad_disabled() { this->take_grad = false; }
     void set_grad_enabled() {this->take_grad = true; }
+
+    // backpropagation
     void backward();
+    void compute_lr_derivatives();
 
     // chain rule until we hit the base
     void diff(Value& backprop, shared_ptr<Value> base);
