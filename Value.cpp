@@ -1,12 +1,13 @@
 #include <iostream>
 #include <stdlib.h>
 #include <time.h>
+#include <algorithm>
+#include <queue>
 #include "Value.h"
 
 vector< shared_ptr<Value> > gradient_tape;
 
-void _print_nodes() {
-    cout << endl << endl;
+void _print_nodes() {cout << endl << endl;
     cout << "-----begin node list-----" << endl;
     for (auto x : gradient_tape) {
         cout << *x;
@@ -20,7 +21,7 @@ void _free_nodes() {
 }
 
 // default constructor
-Value::Value() {
+Value::Value() : take_grad{true} {
     op = input;
     indegree = 0;
     outdegree = 0;
@@ -30,7 +31,7 @@ Value::Value() {
 }
 
 // construct from a Value from double
-Value::Value(double val) {
+Value::Value(double val) : take_grad{true} {
     op = input;
     indegree = 0; 
     outdegree = 0; 
@@ -39,11 +40,22 @@ Value::Value(double val) {
     identifier = rand();
 }
 
-Value::Value(double val, Value& lhs, Value& rhs, op_t op) {
+Value::Value(double val, Value& lhs, Value& rhs, op_t op) : take_grad{true} {
     // set current node attributes
     this->val = val;
     this->lhs = lhs.get_self();
     this->rhs = rhs.get_self();
+    this->op = op;
+    indegree = 2;
+    outdegree = 0;
+    grad = 0.0;
+    identifier = rand();
+}
+
+Value::Value(double val, Value& lhs, op_t op) : take_grad{true} {
+    // set current node attributes
+    this->val = val;
+    this->lhs = lhs.get_self();
     this->op = op;
     indegree = 2;
     outdegree = 0;
@@ -124,6 +136,29 @@ shared_ptr<Value> make_Value(double val, Value& lhs, Value& rhs,
     return tmp;
 }
 
+// for unary differentiable operators
+shared_ptr<Value> make_Value(double val, Value& lhs, op_t op) {
+
+    // construct the Value using the constructor
+    shared_ptr<Value> tmp = make_shared<Value>(val, lhs, op);
+
+    // save to gradient_tape
+    gradient_tape.push_back(tmp);
+
+    // update self pointer for the constructed value
+    weak_ptr<Value> to_save = tmp;    
+    tmp->set_self(to_save);
+
+    // set parent node attributes
+    // increment outdegree
+    lhs.inc_outdegree();
+
+    // set descendant of the parents to the constructed node
+    lhs.set_desc(tmp);
+
+    return tmp;
+}
+
 Value::~Value() {
     // if Value is going out of scope, then there are no more shared_ptrs
     // so the ancestors don't exist anymore. Since everything inside of a 
@@ -136,33 +171,32 @@ Value::~Value() {
 
 // operators for constructing the desired values 
 Value& operator+(Value& lhs, Value& rhs) {
-    shared_ptr<Value> tmp = make_Value(lhs.val + rhs.val,
-        lhs, rhs, add);
-
-    return *tmp;
+    return *make_Value(lhs.val + rhs.val, lhs, rhs, add);
 }
 
 
 Value& operator*(Value& lhs, Value& rhs) {
-    shared_ptr<Value> tmp = make_Value(lhs.val * rhs.val,
-        lhs, rhs, mult);
-
-    return *tmp;
+    return *make_Value(lhs.val * rhs.val,lhs, rhs, mult);
 }
 
 Value& operator-(Value& lhs, Value& rhs) {
-    shared_ptr<Value> tmp = make_Value(lhs.val - rhs.val,
-        lhs, rhs, sub);
-
-    return *tmp;
+    return *make_Value(lhs.val - rhs.val, lhs, rhs, sub);
 }
 
 Value& operator/(Value& lhs, Value& rhs) {
-    shared_ptr<Value> tmp = make_Value(lhs.val / rhs.val,
-        lhs, rhs, divide);
-
-    return *tmp;
+    return *make_Value(lhs.val / rhs.val, lhs, rhs, divide);
 }
+
+// This isn't ready yet.
+Value& Value::relu() {
+    double swap_val = 0.0;
+    if(this->grad >= 0) {
+        swap_val = this->grad;
+    }
+
+    return *make_Value(swap_val, *get_self(), relu_op);
+}
+
 
 // from https://stackoverflow.com/questions/45507041/how-to-check-if-weak-ptr-is-empty-non-assigned
 // check if a weak_ptr is assigned 
@@ -201,5 +235,20 @@ ostream& operator<<(ostream& lhs, Value& v) {
     }
     lhs << "------end node------" << endl;
     return lhs;    
+}
+
+bool operator<(const Value& lhs, const Value&rhs) {
+    return !(lhs.indegree < rhs.indegree);
+}
+
+void Value::backward() {
+    // construct the local heap from the gradient tape
+    vector<Value> local_heap = vector<Value>(gradient_tape.size());
+    for(auto& d : gradient_tape) {
+        local_heap.push_back(*d);
+    }
+    make_heap(local_heap.begin(), local_heap.end());
+
+
 }
 

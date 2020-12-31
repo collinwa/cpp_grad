@@ -11,7 +11,8 @@ enum op_t {
     input,
     add,
     divide,
-    sub   
+    sub,
+    relu_op
 };
 
 // the interface you should use to make values
@@ -21,7 +22,8 @@ public:
     // constructors -- users shouldn't call these 
     Value();
     Value(double val);
-    Value(double val, Value& a1, Value& a2, op_t op);
+    Value(double val, Value& lhs, op_t op); // unary construction
+    Value(double val, Value& a1, Value& a2, op_t op); // binary construction
 
     // get a pointer to the value
     shared_ptr<Value> get_self();
@@ -34,7 +36,8 @@ public:
     int get_indegree() { return indegree; }
     int get_outdegree() { return outdegree; }
     op_t get_op() { return op; }
-    double get_val() { return val; } 
+    double get_val() { return val; }
+    bool is_grad_enabled() { return take_grad; }
 
     // setters
     void set_indegree(int indegree) { this->indegree = indegree; }
@@ -45,6 +48,12 @@ public:
     void inc_outdegree() { outdegree++; }
     void inc_indegree() { indegree++; }
     void dec_indegree() { indegree--; }
+    void set_grad_disabled() { this->take_grad = false; }
+    void set_grad_enabled() {this->take_grad = true; }
+    void backward();
+
+    // non-linear activations
+    Value& relu();
 
     // overloaded arithmetic operators;
     friend Value& operator+(Value& lhs, Value& rhs);
@@ -53,8 +62,7 @@ public:
     friend Value& operator/(Value& lhs, Value& rhs);
 
     // overloaded boolean operators
-    friend bool operator>(Value& rhs, Value& lhs);
-    friend bool operator<(Value& rhs, Value& lhs);
+    friend bool operator<(const Value& rhs, const Value& lhs);
 
     // overloaded I/O operators
     friend ostream& operator<<(ostream& os, Value& t);
@@ -76,6 +84,7 @@ private:
 
     vector< shared_ptr<Value> > d;
     int identifier;
+    bool take_grad;
 };
 
 // interface for declaring values 
