@@ -34,7 +34,11 @@ public:
     int get_indegree() { return indegree; }
     int get_outdegree() { return outdegree; }
     op_t get_op() { return op; }
-    double get_val() { return val; }
+    double get_val() { return val; }    
+    double get_grad_l() { return grad_l; } 
+    double get_grad_r() { return grad_r; } 
+    weak_ptr<Value> get_l_ancs() { return lhs; } 
+    weak_ptr<Value> get_r_ancs() { return rhs; } 
     bool is_grad_enabled() { return this->take_grad; }
 
     // get a pointer to the value
@@ -71,7 +75,7 @@ public:
 
     // overloaded boolean operators
     friend bool operator<(const Value& rhs, const Value& lhs);
-    friend void chain_rule(Value& base, shared_ptr<Value> stop, double acc);
+    friend double chain_rule(shared_ptr<Value> cur, shared_ptr<Value> stop);
 
     // overloaded I/O operators
     friend ostream& operator<<(ostream& os, Value& t);

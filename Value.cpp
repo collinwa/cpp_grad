@@ -261,11 +261,11 @@ void Value::backward() {
     make_heap(local_heap.begin(), local_heap.end());
 
     // get a reference to the current vector
-    Value& base_val = *get_self();
+    shared_ptr<Value> base_val = get_self();
     for (auto& x : local_heap) {
         if (x.is_grad_enabled()) {
             // compute gradient for all flexible parameters
-            chain_rule(base_val, x.get_self(), 1.0);
+            x.set_grad(chain_rule(base_val, x.get_self()));
         }
     }
 }
@@ -287,7 +287,9 @@ void Value::compute_lr_derivatives() {
     switch(op) {
         // for binary ops, we guarantee that lhs/rhs exist
         case mult:
+            //d/dx x * y = y
             grad_l = rhs.lock()->get_self()->get_val();
+            //d/dy x * y = x
             grad_r = lhs.lock()->get_self()->get_val();
             break;
         case input:
@@ -295,17 +297,23 @@ void Value::compute_lr_derivatives() {
             grad_r = 1.0;
             break;
         case add:
+            // d/dx x + y = 1.0
             grad_l = 1.0;
+            // d/dy x + y = 1.0
             grad_r = 1.0;
             break;
         case divide:
+            // d/dx x /y = 1/y
             grad_l = 1 / rhs.lock()->get_self()->get_val();
+            // d/dy x / y = -1 * x / y^2
             grad_r = -1 * lhs.lock()->get_self()->get_val() /  
                     (rhs.lock()->get_self()->get_val() * 
                      rhs.lock()->get_self()->get_val());
             break;
         case sub:
+            // d/dx x - y = 1.0
             grad_l = 1.0;
+            // d/dy x - y = -1.0
             grad_r = -1.0;
             break;
         case relu_op:
@@ -317,6 +325,20 @@ void Value::compute_lr_derivatives() {
     }
 }
 
-void chain_rule(Value& base, shared_ptr<Value> stop, double acc) {
-   return; 
+double chain_rule(shared_ptr<Value>cur, shared_ptr<Value> stop) { 
+   switch(cur->get_self()->get_op()) {    
+        // for binary ops, we guarantee that lhs/rhs exist
+        case mult:
+        case divide:
+        case sub:
+        case add:
+            return cur->get_self()->get_grad_l() * chain_rule(cur->get_l_ancs().lock(), stop)+
+                   cur->get_self()->get_grad_r() * chain_rule(cur->get_r_ancs().lock(), stop);
+        case input:
+            return stop == cur ? 1.0 : 0.0;
+        case relu_op:
+            return cur->get_self()->get_grad_l() * chain_rule(cur->get_l_ancs().lock(), stop);
+        default:
+            return 0.0;
+   } 
 }
