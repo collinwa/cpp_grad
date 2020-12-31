@@ -111,6 +111,7 @@ shared_ptr<Value> Value::make_Value(double val, Value& lhs, Value& rhs,
 
     return tmp;
 }
+
 Value::~Value() {
     // if Value is going out of scope, then there are no more shared_ptrs
     // so the ancestors don't exist anymore. Since everything inside of a 
@@ -119,9 +120,9 @@ Value::~Value() {
     (*d).dec_indegree();
 }
 
-// opertors for constructing the desired values 
+// operators for constructing the desired values 
 Value& operator+(Value& lhs, Value& rhs) {
-    shared_ptr<Value> tmp = Value::make_Value(lhs.get_val() + rhs.get_val(),
+    shared_ptr<Value> tmp = Value::make_Value(lhs.val + rhs.val,
         lhs, rhs, add);
 
     return *tmp;
@@ -129,22 +130,50 @@ Value& operator+(Value& lhs, Value& rhs) {
 
 
 Value& operator*(Value& lhs, Value& rhs) {
-    shared_ptr<Value> tmp = Value::make_Value(lhs.get_val() * rhs.get_val(),
+    shared_ptr<Value> tmp = Value::make_Value(lhs.val * rhs.val,
         lhs, rhs, mult);
 
     return *tmp;
 }
 
 Value& operator-(Value& lhs, Value& rhs) {
-    shared_ptr<Value> tmp = Value::make_Value(lhs.get_val() - rhs.get_val(),
+    shared_ptr<Value> tmp = Value::make_Value(lhs.val - rhs.val,
         lhs, rhs, sub);
 
     return *tmp;
 }
 
 Value& operator/(Value& lhs, Value& rhs) {
-    shared_ptr<Value> tmp = Value::make_Value(lhs.get_val() / rhs.get_val(),
+    shared_ptr<Value> tmp = Value::make_Value(lhs.val / rhs.val,
         lhs, rhs, divide);
 
     return *tmp;
+}
+
+// operator for printing out a node
+ostream& operator<<(ostream& lhs, Value& v) {
+    lhs << "-----begin node-----" << v.identifier << endl;
+    lhs << "id: " << v.identifier << endl;
+    lhs << "value: " << v.val << endl;
+    lhs << "grad: " << v.grad << endl;
+    lhs << "indegree: " << v.indegree << endl;
+    lhs << "outdegree: " << v.outdegree << endl;
+    lhs << "op_t " << v.op << endl;
+    if (!v.lhs.expired()) {
+        lhs << "left ancestor: " << (v.lhs.lock())->identifier << endl;
+    } else {
+        lhs << "left ancestor: nullptr" << endl;
+    }
+    if (!v.rhs.expired()) {
+        lhs << "right ancestor: " << (v.rhs.lock())->identifier << endl;    
+    } else {        
+        lhs << "right ancestor: nullptr" << endl;
+    }
+    if (v.d != nullptr) {    
+        lhs << "descendant: " << (v.d)->identifier << endl;
+    } else {
+        lhs << "descendant: nullptr" << endl;
+    }
+    lhs << "------end node------" << v.grad << endl;
+    return lhs;    
 }

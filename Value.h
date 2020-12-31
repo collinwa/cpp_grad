@@ -51,13 +51,18 @@ public:
     void inc_indegree() { indegree++; }
     void dec_indegree() { indegree--; }
 
-    // overloaded operators;
+    // overloaded arithmetic operators;
     friend Value& operator+(Value& lhs, Value& rhs);
     friend Value& operator-(Value& lhs, Value& rhs);
     friend Value& operator*(Value& lhs, Value& rhs);
     friend Value& operator/(Value& lhs, Value& rhs);
+
+    // overloaded boolean operators
     friend bool operator>(Value& rhs, Value& lhs);
     friend bool operator<(Value& rhs, Value& lhs);
+
+    // overloaded I/O operators
+    friend ostream& operator<<(ostream& os, Value& t);
 
     // destructor
     ~Value();
