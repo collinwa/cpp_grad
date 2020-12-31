@@ -25,8 +25,6 @@ public:
     Value(double val, Value& lhs, op_t op); // unary construction
     Value(double val, Value& a1, Value& a2, op_t op); // binary construction
 
-    // get a pointer to the value
-    shared_ptr<Value> get_self();
 
     // setters for DAG-related objects
     void set_desc(shared_ptr<Value>& descendant);
@@ -37,12 +35,16 @@ public:
     int get_outdegree() { return outdegree; }
     op_t get_op() { return op; }
     double get_val() { return val; }
-    bool is_grad_enabled() { return take_grad; }
+    bool is_grad_enabled() { return this->take_grad; }
+
+    // get a pointer to the value
+    shared_ptr<Value> get_self() { return self.lock(); };
 
     // setters
     void set_indegree(int indegree) { this->indegree = indegree; }
     void set_outdegree(int outdegree) { this->outdegree = outdegree; }
     void set_op(op_t op) { this->op = op; }
+    void set_grad(double grad) { this->grad = grad; }
 
     // modifiers
     void inc_outdegree() { outdegree++; }
@@ -51,6 +53,9 @@ public:
     void set_grad_disabled() { this->take_grad = false; }
     void set_grad_enabled() {this->take_grad = true; }
     void backward();
+
+    // chain rule until we hit the base
+    void diff(Value& backprop, shared_ptr<Value> base);
 
     // non-linear activations
     Value& relu();
@@ -71,28 +76,38 @@ public:
     ~Value();
 
 private:
+    // gradient-related instance vars
     double val;
-    double grad;
+    double grad; // gradient of interest
 
+    // grad_l and grad_r are derivative of output w.r.t. left/right input
+    double grad_l;
+    double grad_r;
+
+    op_t op;
+    bool take_grad;
+
+    // DAG-related instance vars
     int indegree;
     int outdegree;
-    op_t op;
 
+    // ancestors and self pointer
     weak_ptr<Value> lhs;
     weak_ptr<Value> rhs;
     weak_ptr<Value> self;
 
+    // list of descendants
     vector< shared_ptr<Value> > d;
+
+    // node id
     int identifier;
-    bool take_grad;
 };
 
 // interface for declaring values 
 shared_ptr<Value> make_Value();
 shared_ptr<Value> make_Value(double val);
-shared_ptr<Value> make_Value(Value& a1, Value& a2);
-shared_ptr<Value> make_Value(double val, Value& a1, 
-    Value& a2, op_t op);
+shared_ptr<Value> make_Value(double val, Value& lhs, op_t op);
+shared_ptr<Value> make_Value(double val, Value& lhs, Value& rhs, op_t op);
 
 // private method for printing all nodes in the gradient tape
 void _print_nodes();

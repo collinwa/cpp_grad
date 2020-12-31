@@ -27,6 +27,8 @@ Value::Value() : take_grad{true} {
     outdegree = 0;
     val = 0.0;
     grad = 0.0;
+    grad_l = 0.0;
+    grad_r = 0.0;
     identifier = rand();
 }
 
@@ -37,6 +39,8 @@ Value::Value(double val) : take_grad{true} {
     outdegree = 0; 
     this->val = val;
     grad = 0.0;
+    grad_l = 0.0;
+    grad_r = 0.0;
     identifier = rand();
 }
 
@@ -47,8 +51,10 @@ Value::Value(double val, Value& lhs, Value& rhs, op_t op) : take_grad{true} {
     this->rhs = rhs.get_self();
     this->op = op;
     indegree = 2;
-    outdegree = 0;
+    outdegree = 0;    
     grad = 0.0;
+    grad_l = 0.0;
+    grad_r = 0.0;
     identifier = rand();
 }
 
@@ -58,14 +64,11 @@ Value::Value(double val, Value& lhs, op_t op) : take_grad{true} {
     this->lhs = lhs.get_self();
     this->op = op;
     indegree = 2;
-    outdegree = 0;
+    outdegree = 0;    
     grad = 0.0;
+    grad_l = 0.0;
+    grad_r = 0.0;
     identifier = rand();
-}
-
-// return a shared_ptr to the current Value
-shared_ptr<Value> Value::get_self() {
-    return self.lock();
 }
 
 // set the current Value
@@ -190,8 +193,8 @@ Value& operator/(Value& lhs, Value& rhs) {
 // This isn't ready yet.
 Value& Value::relu() {
     double swap_val = 0.0;
-    if(this->grad >= 0) {
-        swap_val = this->grad;
+    if(this->val >= 0) {
+        swap_val = this->val;
     }
 
     return *make_Value(swap_val, *get_self(), relu_op);
@@ -212,6 +215,8 @@ ostream& operator<<(ostream& lhs, Value& v) {
     lhs << "id: " << v.identifier << endl;
     lhs << "value: " << v.val << endl;
     lhs << "grad: " << v.grad << endl;
+    lhs << "l_grad: " << v.grad_l << endl;
+    lhs << "r_grad: " << v.grad_r << endl;
     lhs << "indegree: " << v.indegree << endl;
     lhs << "outdegree: " << v.outdegree << endl;
     lhs << "op_t " << v.op << endl;
@@ -249,6 +254,15 @@ void Value::backward() {
     }
     make_heap(local_heap.begin(), local_heap.end());
 
+    Value& base_val = *get_self();
 
+    // get a referenc to the current vector
+    for (auto& x : local_heap) {
+        if (x.is_grad_enabled()) {
+            //diff(base_val, x.get_self());
+        }
+    }
 }
+
+
 
