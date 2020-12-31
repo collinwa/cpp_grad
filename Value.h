@@ -49,8 +49,10 @@ public:
     void set_outdegree(int outdegree) { this->outdegree = outdegree; }
     void set_op(op_t op) { this->op = op; }
     void set_grad(double grad) { 
-        this->grad = grad; 
+        this->grad = grad;
+        #ifdef PRINTGRAD 
         cout << "grad set to: " << grad << endl;
+        #endif
     }
 
     // modifiers

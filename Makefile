@@ -1,8 +1,8 @@
 CC  = g++
 CXX = g++ 
 
-INCLUDES =
-
+INCLUDES = -DPRINTGRAD
+#INCLUDES = 
 CFLAGS   = -g -Wall $(INCLUDES)
 CXXFLAGS = -g -Wall $(INCLUDES) -std=c++11
 
