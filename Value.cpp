@@ -1,8 +1,9 @@
 #include <iostream>
-#include <stdlib.h>
-#include <time.h>
 #include <algorithm>
 #include <queue>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
 #include "Value.h"
 
 vector< shared_ptr<Value> > gradient_tape;
@@ -63,7 +64,7 @@ Value::Value(double val, Value& lhs, op_t op) : take_grad{true} {
     this->val = val;
     this->lhs = lhs.get_self();
     this->op = op;
-    indegree = 2;
+    indegree = 1;
     outdegree = 0;    
     grad = 0.0;
     grad_l = 0.0;
@@ -200,6 +201,10 @@ Value& Value::relu() {
     return *make_Value(swap_val, *get_self(), relu_op);
 }
 
+Value& Value::exp() {
+    return *make_Value(::exp(val), *get_self(), exp_op);
+}
+
 
 // from https://stackoverflow.com/questions/45507041/how-to-check-if-weak-ptr-is-empty-non-assigned
 // check if a weak_ptr is assigned 
@@ -270,13 +275,14 @@ void Value::backward() {
 }
 
 /*
-*enum op_t {
+enum op_t {
     mult,
     input,
     add,
     divide,
     sub,
-    relu_op
+    relu_op,
+    exp_op
 };
 */
 
@@ -319,6 +325,11 @@ void Value::compute_lr_derivatives() {
             grad_l = val >= 0.0 ? 1.0 : 0.0;
             grad_r = 0.0;
             break;
+        case exp_op:
+            // d/dx e^x = e^x
+            grad_l = val;
+            grad_r = 0.0;
+            break;
         default:
             break;
     }
@@ -335,6 +346,7 @@ double chain_rule(shared_ptr<Value>cur, shared_ptr<Value> stop) {
                    cur->get_self()->get_grad_r() * chain_rule(cur->get_r_ancs().lock(), stop);
         case input:
             return stop == cur ? 1.0 : 0.0;
+        case exp_op:
         case relu_op:
             return cur->get_self()->get_grad_l() * chain_rule(cur->get_l_ancs().lock(), stop);
         default:

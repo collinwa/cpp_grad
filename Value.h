@@ -12,7 +12,8 @@ enum op_t {
     add,
     divide,
     sub,
-    relu_op
+    relu_op,
+    exp_op
 };
 
 // the interface you should use to make values
@@ -71,6 +72,7 @@ public:
 
     // non-linear activations
     Value& relu();
+    Value& exp();
 
     // overloaded arithmetic operators;
     friend Value& operator+(Value& lhs, Value& rhs);
