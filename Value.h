@@ -48,7 +48,10 @@ public:
     void set_indegree(int indegree) { this->indegree = indegree; }
     void set_outdegree(int outdegree) { this->outdegree = outdegree; }
     void set_op(op_t op) { this->op = op; }
-    void set_grad(double grad) { this->grad = grad; }
+    void set_grad(double grad) { 
+        this->grad = grad; 
+        cout << "grad set to: " << grad << endl;
+    }
 
     // modifiers
     void inc_outdegree() { outdegree++; }

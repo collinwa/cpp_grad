@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
     shared_ptr<Value> x4 = make_Value(6.0);
 
     Value& x5 = *x4 / x3 - *x2 + *x1 * *x4;
+    x5.backward();
     cout << x5 ;
     _print_nodes();
     _free_nodes();

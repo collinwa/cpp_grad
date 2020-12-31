@@ -242,9 +242,11 @@ ostream& operator<<(ostream& lhs, Value& v) {
     return lhs;    
 }
 
-bool operator<(const Value& lhs, const Value&rhs) {
-    return !(lhs.indegree < rhs.indegree);
-}
+struct shrd_ptr_sort {
+    bool operator()(const shared_ptr<Value>& lhs, const shared_ptr<Value>& rhs) {
+       return (lhs->get_indegree() >= rhs->get_indegree());
+    }
+};
 
 void Value::backward() {
     // compute derivatives before copying
@@ -252,20 +254,17 @@ void Value::backward() {
         x->compute_lr_derivatives();  
     }
 
-    // construct the local heap from the gradient tape
-    vector<Value> local_heap = vector<Value>(gradient_tape.size());
-    // copy gradient tape to the local heap
-    for(auto& d : gradient_tape) {
-        local_heap.push_back(*d);
-    }
-    make_heap(local_heap.begin(), local_heap.end());
+    make_heap(gradient_tape.begin(), gradient_tape.end(), shrd_ptr_sort());
 
     // get a reference to the current vector
     shared_ptr<Value> base_val = get_self();
-    for (auto& x : local_heap) {
-        if (x.is_grad_enabled()) {
+    // ok cool
+    for (auto& x : gradient_tape) {
+        if (x->is_grad_enabled()) {
+            // compute the double
+            double tmp = chain_rule(base_val, x->get_self());
             // compute gradient for all flexible parameters
-            x.set_grad(chain_rule(base_val, x.get_self()));
+            x->set_grad(tmp);
         }
     }
 }
