@@ -14,14 +14,9 @@ enum op_t {
     sub   
 };
 
+// the interface you should use to make values
 class Value {
 public:
-    // static interface for value construction
-    static shared_ptr<Value> make_Value();
-    static shared_ptr<Value> make_Value(double val);
-    static shared_ptr<Value> make_Value(Value& a1, Value& a2);
-    static shared_ptr<Value> make_Value(double val, Value& a1, 
-        Value& a2, op_t op);
 
     // constructors -- users shouldn't call these 
     Value();
@@ -79,8 +74,19 @@ private:
     weak_ptr<Value> rhs;
     weak_ptr<Value> self;
 
-    shared_ptr<Value> d;
+    vector< shared_ptr<Value> > d;
     int identifier;
 };
+
+// interface for declaring values 
+shared_ptr<Value> make_Value();
+shared_ptr<Value> make_Value(double val);
+shared_ptr<Value> make_Value(Value& a1, Value& a2);
+shared_ptr<Value> make_Value(double val, Value& a1, 
+    Value& a2, op_t op);
+
+// private method for printing all nodes in the gradient tape
+void _print_nodes();
+void _free_nodes();
 
 #endif
