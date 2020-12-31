@@ -18,7 +18,7 @@ private:
 
 };
 
-vector< shared_ptr< Test > > ALL_PARAMS;
+//vector< shared_ptr< Test > > ALL_PARAMS;
 
 shared_ptr<Test> make_Test() {
     shared_ptr<Test> tmp (new Test()); 
