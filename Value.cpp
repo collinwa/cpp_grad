@@ -91,6 +91,11 @@ void Value::set_desc(shared_ptr<Value>& descendant) {
     this->d.push_back(descendant) ;
 }
 
+void Value::replace_desc(shared_ptr<Value>& new_v,shared_ptr<Value>& old_v) {
+    auto it = find(d.begin(), d.end(), old_v);
+    *it = new_v;
+}
+
 // create value, add to gradient_tape, return shared_ptr
 shared_ptr<Value> make_Value() {    
 
@@ -299,7 +304,7 @@ shared_ptr<Value> Value::replace_node(shared_ptr<Value>& to_replace) {
     if (repl_par->get_op() == input) return repl_par;
 
     // set the left ancestor / check if right ancestor needs stuff
-    repl_par->get_l_ancs().lock()->set_desc(repl_par);
+    repl_par->get_l_ancs().lock()->replace_desc(repl_par, to_replace);
     switch(repl_par->get_op()) {
         // unary operators are done
         case exp_op:
@@ -309,7 +314,7 @@ shared_ptr<Value> Value::replace_node(shared_ptr<Value>& to_replace) {
         case divide:
         case sub:
         case add:    
-            repl_par->get_r_ancs().lock()->set_desc(repl_par);
+            repl_par->get_r_ancs().lock()->replace_desc(repl_par, to_replace);
             return repl_par;
         default:
             return shared_ptr<Value>(); 
@@ -361,9 +366,20 @@ void Value::toposort() {
 }
 
 void Value::topo_backward() {
+    // toposort gradient tape; 
+    // IMPORTANT CAVEAT: every non-output node must have >0 outdegree (note the strict inequality)
+    // The output node (node on which we want to call backward()) must have exactly 0 outdegree
     Value::toposort();
+    bool first = true;
+    double to_propagate = 1.0;
+
+    // backpropagation algorithm
     for(auto& x : topo_gradient_tape) {
-        cout << x;
+        if (first) {
+            continue;
+        }
+
+        //cout << x;
     }
 }
 

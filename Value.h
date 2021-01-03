@@ -26,9 +26,9 @@ public:
     Value(double val, Value& lhs, op_t op); // unary construction
     Value(double val, Value& a1, Value& a2, op_t op); // binary construction
 
-
     // setters for DAG-related objects
     void set_desc(shared_ptr<Value>& descendant);
+    void replace_desc(shared_ptr<Value>& new_v,shared_ptr<Value>& old_v);
     void set_self(weak_ptr<Value>& self);
 
     // getters 
@@ -136,7 +136,7 @@ private:
 
     // list of descendants
     vector< shared_ptr<Value> > d;
-
+    vector< double > desc_grads;
     // node id
     int identifier;
 };
