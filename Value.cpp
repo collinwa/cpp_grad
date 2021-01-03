@@ -26,6 +26,8 @@ Value::Value() : take_grad{true} {
     op = input;
     indegree = 0;
     outdegree = 0;
+    topo_indegree = 0;
+    topo_outdegree = 0;
     val = 0.0;
     grad = 0.0;
     grad_l = 0.0;
@@ -38,6 +40,8 @@ Value::Value(double val) : take_grad{true} {
     op = input;
     indegree = 0; 
     outdegree = 0; 
+    topo_indegree = 0;
+    topo_outdegree = 0;
     this->val = val;
     grad = 0.0;
     grad_l = 0.0;
@@ -53,6 +57,8 @@ Value::Value(double val, Value& lhs, Value& rhs, op_t op) : take_grad{true} {
     this->op = op;
     indegree = 2;
     outdegree = 0;    
+    topo_indegree = 0;
+    topo_outdegree = 0;
     grad = 0.0;
     grad_l = 0.0;
     grad_r = 0.0;
@@ -66,6 +72,8 @@ Value::Value(double val, Value& lhs, op_t op) : take_grad{true} {
     this->op = op;
     indegree = 1;
     outdegree = 0;    
+    topo_indegree = 0;
+    topo_outdegree = 0;
     grad = 0.0;
     grad_l = 0.0;
     grad_r = 0.0;
@@ -274,6 +282,10 @@ void Value::backward() {
     }
 }
 
+void topo_backward() {
+
+}
+
 /*
 enum op_t {
     mult,
@@ -336,19 +348,19 @@ void Value::compute_lr_derivatives() {
 }
 
 double chain_rule(shared_ptr<Value>cur, shared_ptr<Value> stop) { 
-   switch(cur->get_self()->get_op()) {    
+   switch(cur->get_op()) {    
         // for binary ops, we guarantee that lhs/rhs exist
         case mult:
         case divide:
         case sub:
         case add:
-            return cur->get_self()->get_grad_l() * chain_rule(cur->get_l_ancs().lock(), stop)+
-                   cur->get_self()->get_grad_r() * chain_rule(cur->get_r_ancs().lock(), stop);
+            return cur->get_grad_l() * chain_rule(cur->get_l_ancs().lock(), stop)+
+                   cur->get_grad_r() * chain_rule(cur->get_r_ancs().lock(), stop);
         case input:
             return stop == cur ? 1.0 : 0.0;
         case exp_op:
         case relu_op:
-            return cur->get_self()->get_grad_l() * chain_rule(cur->get_l_ancs().lock(), stop);
+            return cur->get_grad_l() * chain_rule(cur->get_l_ancs().lock(), stop);
         default:
             return 0.0;
    } 

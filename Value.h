@@ -56,10 +56,20 @@ public:
         #endif
     }
 
+    void set_topo_indgr() { topo_indegree = indegree; }
+    void set_topo_outdgr() { topo_outdegree = outdegree; }
+
     // modifiers
-    void inc_outdegree() { outdegree++; }
     void inc_indegree() { indegree++; }
+    void inc_outdegree() { outdegree++; }
     void dec_indegree() { indegree--; }
+    void dec_outdegree() { outdegree--; }
+
+    void inc_topo_indgr() { topo_indegree++; }
+    void inc_topo_outdgr() { topo_outdegree++; }
+    void dec_topo_indgr() { topo_indegree--; }
+    void dec_topo_outdgr() { topo_outdegree--; }    
+
     void set_grad_disabled() { this->take_grad = false; }
     void set_grad_enabled() {this->take_grad = true; }
 
@@ -105,6 +115,8 @@ private:
     // DAG-related instance vars
     int indegree;
     int outdegree;
+    int topo_indegree;
+    int topo_outdegree;
 
     // ancestors and self pointer
     weak_ptr<Value> lhs;
