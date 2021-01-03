@@ -33,7 +33,10 @@ public:
 
     // getters 
     int get_indegree() { return indegree; }
-    int get_outdegree() { return outdegree; }
+    int get_outdegree() { return outdegree; }    
+    int get_topo_indegree() { return topo_indegree; }
+    int get_topo_outdegree() { return topo_outdegree; }
+
     op_t get_op() { return op; }
     double get_val() { return val; }    
     double get_grad_l() { return grad_l; } 
@@ -41,6 +44,7 @@ public:
     weak_ptr<Value> get_l_ancs() { return lhs; } 
     weak_ptr<Value> get_r_ancs() { return rhs; } 
     bool is_grad_enabled() { return this->take_grad; }
+    bool is_alive() { return alive; }
 
     // get a pointer to the value
     shared_ptr<Value> get_self() { return self.lock(); };
@@ -48,6 +52,9 @@ public:
     // setters
     void set_indegree(int indegree) { this->indegree = indegree; }
     void set_outdegree(int outdegree) { this->outdegree = outdegree; }
+    void set_topo_indgr() { topo_indegree = indegree; }
+    void set_topo_outdgr() { topo_outdegree = outdegree; }
+
     void set_op(op_t op) { this->op = op; }
     void set_grad(double grad) { 
         this->grad = grad;
@@ -56,8 +63,7 @@ public:
         #endif
     }
 
-    void set_topo_indgr() { topo_indegree = indegree; }
-    void set_topo_outdgr() { topo_outdegree = outdegree; }
+    void set_alive(bool alive) { this->alive = alive; }
 
     // modifiers
     void inc_indegree() { indegree++; }
@@ -75,6 +81,7 @@ public:
 
     // backpropagation
     void backward();
+    void topo_backward();
     void compute_lr_derivatives();
 
     // chain rule until we hit the base
@@ -111,6 +118,7 @@ private:
 
     op_t op;
     bool take_grad;
+    bool alive;
 
     // DAG-related instance vars
     int indegree;
@@ -122,6 +130,9 @@ private:
     weak_ptr<Value> lhs;
     weak_ptr<Value> rhs;
     weak_ptr<Value> self;
+
+    void toposort();
+    shared_ptr<Value> replace_node(shared_ptr<Value>& to_replace);
 
     // list of descendants
     vector< shared_ptr<Value> > d;

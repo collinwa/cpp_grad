@@ -6,6 +6,7 @@
 #include <math.h>
 #include "Value.h"
 
+vector< shared_ptr<Value> > topo_gradient_tape;
 vector< shared_ptr<Value> > gradient_tape;
 
 void _print_nodes() {cout << endl << endl;
@@ -22,7 +23,7 @@ void _free_nodes() {
 }
 
 // default constructor
-Value::Value() : take_grad{true} {
+Value::Value() : take_grad{true}, alive{true} {
     op = input;
     indegree = 0;
     outdegree = 0;
@@ -36,7 +37,7 @@ Value::Value() : take_grad{true} {
 }
 
 // construct from a Value from double
-Value::Value(double val) : take_grad{true} {
+Value::Value(double val) : take_grad{true}, alive{true} {
     op = input;
     indegree = 0; 
     outdegree = 0; 
@@ -49,7 +50,7 @@ Value::Value(double val) : take_grad{true} {
     identifier = rand();
 }
 
-Value::Value(double val, Value& lhs, Value& rhs, op_t op) : take_grad{true} {
+Value::Value(double val, Value& lhs, Value& rhs, op_t op) : take_grad{true}, alive{true} {
     // set current node attributes
     this->val = val;
     this->lhs = lhs.get_self();
@@ -65,7 +66,7 @@ Value::Value(double val, Value& lhs, Value& rhs, op_t op) : take_grad{true} {
     identifier = rand();
 }
 
-Value::Value(double val, Value& lhs, op_t op) : take_grad{true} {
+Value::Value(double val, Value& lhs, op_t op) : take_grad{true}, alive{true} {
     // set current node attributes
     this->val = val;
     this->lhs = lhs.get_self();
@@ -282,8 +283,88 @@ void Value::backward() {
     }
 }
 
-void topo_backward() {
+struct outdgr_sort {
+    bool operator()(shared_ptr<Value>& x1, shared_ptr<Value>& x2) {
+        return x1->get_topo_outdegree() < x2->get_topo_outdegree();
+    }
+};
 
+shared_ptr<Value> Value::replace_node(shared_ptr<Value>& to_replace) {
+    // create a replacement node & decrement its outdegree
+    shared_ptr<Value> repl_par = make_shared<Value>(*to_replace);
+    repl_par->dec_topo_outdgr();
+
+    // mark to_replace to be skipped; return rightaway for inputs
+    to_replace->set_alive(false);
+    if (repl_par->get_op() == input) return repl_par;
+
+    // set the left ancestor / check if right ancestor needs stuff
+    repl_par->get_l_ancs().lock()->set_desc(repl_par);
+    switch(repl_par->get_op()) {
+        // unary operators are done
+        case exp_op:
+        case relu_op:
+            return repl_par;
+        case mult:
+        case divide:
+        case sub:
+        case add:    
+            repl_par->get_r_ancs().lock()->set_desc(repl_par);
+            return repl_par;
+        default:
+            return shared_ptr<Value>(); 
+    }
+}
+
+void Value::toposort() {
+    // set parameters required for toposort
+    for (auto& x : gradient_tape) {
+        x->set_topo_indgr();
+        x->set_topo_outdgr();
+    }
+
+    // create the heap for fast toposort
+    make_heap(gradient_tape.begin(), gradient_tape.end(), outdgr_sort());
+
+    // condition of toposort terminatio
+    while(gradient_tape.size() != 0) {
+        // retrieve desired value from the heap
+        shared_ptr<Value> result  = gradient_tape[0];
+        // move initial value to the end of the heap
+        pop_heap(gradient_tape.begin(), gradient_tape.end());
+        // pop from the heap
+        gradient_tape.pop_back();
+
+        // by-default, nodes are alive; this will change as the toposort
+        // continues and outdegrees are modified
+        if(result->is_alive()) {
+            // add to the topo-sorted gradient tape  
+            topo_gradient_tape.push_back(result);
+
+            // replace node decrements outdegree + replaces the 
+            // values with updated values in the DAG
+            shared_ptr<Value> l_par = result->get_l_ancs().lock();
+            shared_ptr<Value> r_par = result->get_r_ancs().lock();
+            Value::replace_node(l_par);
+            Value::replace_node(r_par);
+
+            // now we just push to the heap the new alive values and we're good
+            gradient_tape.push_back(l_par);
+            push_heap(gradient_tape.begin(), gradient_tape.end(), outdgr_sort());
+            gradient_tape.push_back(r_par);            
+            push_heap(gradient_tape.begin(), gradient_tape.end(), outdgr_sort());
+        }
+// for dead values, replace_node() modifies DAG to safely excise those values from the tree.
+// i.e., There are no more shared_ptrs in the DAG that point to them. When the loop-scope exits, 
+// the final shared_ptr to a dead node will be popped, and the object will be freed. 
+    }
+}
+
+void Value::topo_backward() {
+    Value::toposort();
+    for(auto& x : topo_gradient_tape) {
+        cout << x;
+    }
 }
 
 /*
@@ -305,9 +386,9 @@ void Value::compute_lr_derivatives() {
         // for binary ops, we guarantee that lhs/rhs exist
         case mult:
             //d/dx x * y = y
-            grad_l = rhs.lock()->get_self()->get_val();
+            grad_l = rhs.lock()->get_val();
             //d/dy x * y = x
-            grad_r = lhs.lock()->get_self()->get_val();
+            grad_r = lhs.lock()->get_val();
             break;
         case input:
             grad_l = 1.0;
@@ -321,11 +402,11 @@ void Value::compute_lr_derivatives() {
             break;
         case divide:
             // d/dx x /y = 1/y
-            grad_l = 1 / rhs.lock()->get_self()->get_val();
+            grad_l = 1 / rhs.lock()->get_val();
             // d/dy x / y = -1 * x / y^2
-            grad_r = -1 * lhs.lock()->get_self()->get_val() /  
-                    (rhs.lock()->get_self()->get_val() * 
-                     rhs.lock()->get_self()->get_val());
+            grad_r = -1 * lhs.lock()->get_val() /  
+                    (rhs.lock()->get_val() * 
+                     rhs.lock()->get_val());
             break;
         case sub:
             // d/dx x - y = 1.0
