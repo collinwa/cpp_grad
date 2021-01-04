@@ -10,14 +10,14 @@ LDFLAGS = -g
 LDLIBS  =
 
 executables = run_autograd
-objects = Value.o run_autograd.o
+objects = Value.o run_autograd.o Matrix.o
 
 .PHONY: default
 default: $(executables)
 
 $(executables): $(objects)
 
-$(objects): Value.h
+$(objects): Value.h Matrix.h
 
 .PHONY: clean
 clean:
