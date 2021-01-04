@@ -11,7 +11,7 @@ Matrix::Matrix() {
     rows = 0; cols = 0;
 }
 
-Matrix(int dim1, int dim2, double epsilon_init) {
+Matrix::Matrix(int dim1, int dim2, double epsilon_init) {
     rows = dim1; col2 = dim2;
     for (int i = 0; i < dim1; i++) {
         std::vector<shared_ptr<Value>> temp;
